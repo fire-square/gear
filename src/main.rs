@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 
 mod db;
 mod errors;
+mod idtake;
 mod models;
 mod schema;
 
@@ -18,6 +19,7 @@ async fn main() -> Result<()> {
 
 	let app = Router::new()
 		.route("/", get(hello))
+		.route("/take_uuid", get(idtake::take_uuid))
 		.route("/users/:name", post(create_user))
 		.layer(Extension(conn));
 
