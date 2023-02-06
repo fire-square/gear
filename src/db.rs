@@ -1,5 +1,6 @@
 use crate::models::User;
 use crate::schema::users::dsl::*;
+use anyhow::Result;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -8,12 +9,11 @@ use uuid::Uuid;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
-pub fn establish_connection() -> PgConnection {
+pub fn establish_connection() -> Result<PgConnection> {
 	let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-	let mut conn = PgConnection::establish(&database_url)
-		.unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+	let mut conn = PgConnection::establish(&database_url)?;
 	conn.run_pending_migrations(MIGRATIONS).unwrap();
-	conn
+	Ok(conn)
 }
 
 pub fn create_user(conn: &mut PgConnection, name: String) -> Result<Uuid, anyhow::Error> {
