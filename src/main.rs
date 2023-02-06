@@ -4,6 +4,7 @@ use axum::response::Html;
 use axum::routing::{get, post};
 use axum::{Extension, Router};
 use diesel::PgConnection;
+use log::info;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 
@@ -15,6 +16,9 @@ mod schema;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+	env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+	log_panics::init();
+
 	let conn = Arc::new(Mutex::new(db::establish_connection()));
 
 	let app = Router::new()
@@ -24,7 +28,7 @@ async fn main() -> Result<()> {
 		.layer(Extension(conn));
 
 	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-	println!("listening on {}", addr);
+	info!("Listening on {}", addr);
 	axum::Server::bind(&addr)
 		.serve(app.into_make_service())
 		.await?;
