@@ -1,38 +1,32 @@
 use anyhow::Result;
 use axum::Json;
-use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::env::var;
 use std::string::String;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct UuidClaim {
-	id: Uuid,
-}
-
 #[derive(Debug, Serialize)]
 pub struct UuidTakeResponse {
 	id: Uuid,
-	token: String,
+	hash: [u8; 32],
 }
 
-fn get_jwt_secret() -> String {
-	var("JWT_SECRET").unwrap_or_else(|_| String::from("secret"))
-}
-
-fn create_uuid_token(id: &Uuid) -> Result<String> {
-	let claim = UuidClaim { id: id.clone() };
-	Ok(encode(
-		&Header::default(),
-		&claim,
-		&EncodingKey::from_secret(get_jwt_secret().as_ref()),
-	)?)
+fn get_hash_secret() -> String {
+	var("HASH_SECRET").unwrap_or_else(|_| String::from("secret"))
 }
 
 pub async fn take_uuid() -> Result<Json<UuidTakeResponse>, crate::errors::AppError> {
 	let id = Uuid::new_v4();
-	let token = create_uuid_token(&id)?;
-	let response = UuidTakeResponse { id, token };
+
+	let mut hasher = Sha256::new();
+	hasher.update(id);
+	hasher.update(get_hash_secret());
+	let hash = hasher.finalize();
+
+	let response = UuidTakeResponse {
+		id,
+		hash: hash.into(),
+	};
 	Ok(Json(response))
 }
